@@ -47,12 +47,9 @@ const search = async () => {
 </script>
 
 <style>
-.card { background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 16px; }
-.filters { display: flex; gap: 8px; margin-bottom: 12px; }
-.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.box { background: #FFFFFF; border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px; }
-.title { font-weight: 600; margin-bottom: 8px; }
-.tag { display: inline-block; background: #e6f4ff; color: #1890FF; padding: 4px 8px; border-radius: 4px; margin: 4px; }
-.btn { background: #1890FF; color: #FFFFFF; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
-input { border: 1px solid #ddd; border-radius: 4px; padding: 6px 8px; width: 260px; }
+/* 使用全局theme.css中的样式类 */
+/* 只需定义此页面特有的样式调整 */
+/* 使用语义化的grid类名替代通用grid */
+.grid-two-col { }
+input { width: 260px; }
 </style>

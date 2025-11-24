@@ -21,9 +21,12 @@ import FooterBar from './components/FooterBar.vue'
 
 <style>
 .layout { display: flex; flex-direction: column; height: 100vh; }
-.topbar { height: 100px; }
+.topbar {
+  height: 60px !important;
+  background: var(--color-panel);
+}
 .content { display: flex; flex: 1; }
-.sidenav { width: 240px; }
+.sidenav { width: 160px; }
 .main { flex: 1; }
 .footer { height: 40px; }
 </style>

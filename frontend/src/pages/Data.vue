@@ -37,10 +37,9 @@ onMounted(load)
 </script>
 
 <style>
-.card { background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 16px; }
-.title { font-weight: 600; margin-bottom: 8px; }
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
-.ok { color: #52C41A; }
-.bad { color: #F5222D; }
+/* 使用全局theme.css中的样式类 */
+/* 只需定义此页面特有的样式调整 */
+/* 重命名状态类以匹配全局命名规范 */
+.ok { color: var(--color-success); }
+.bad { color: var(--color-danger); }
 </style>

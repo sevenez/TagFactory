@@ -91,12 +91,8 @@ const formatNumber = (n) => Intl.NumberFormat().format(n)
 </script>
 
 <style>
-.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+/* 使用全局theme.css中的样式类 */
+/* 只需定义此页面特有的样式调整 */
 .title { font-weight: 700; }
-.actions { display: flex; gap: 10px; }
-.filters { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
-.link { color: var(--color-primary); cursor: pointer; margin-right: 10px; text-decoration: none; }
-.link.danger { color: var(--color-danger); }
-.name { font-weight: 600; }
-.ops { white-space: nowrap; }
+.filters { gap: 10px; }
 </style>

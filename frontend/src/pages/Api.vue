@@ -42,12 +42,8 @@ onMounted(load)
 </script>
 
 <style>
-.card { background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 16px; }
-.title { font-weight: 600; margin-bottom: 8px; }
-.box { padding: 8px; background: #FFFFFF; border: 1px solid #f0f0f0; border-radius: 8px; }
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
-.btn { background: #1890FF; color: #FFFFFF; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
-.row { display: flex; gap: 8px; margin: 8px 0; }
-input { border: 1px solid #ddd; border-radius: 4px; padding: 6px 8px; }
+/* 使用全局theme.css中的样式类 */
+/* 只需定义此页面特有的样式调整 */
+.box { background: #F5F5F5; border: 1px solid #E8E8E8; }
+.row { display: flex; justify-content: space-between; margin-bottom: 8px; }
 </style>

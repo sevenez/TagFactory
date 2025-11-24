@@ -38,10 +38,6 @@ onMounted(load)
 </script>
 
 <style>
-.card { background: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 16px; }
-.filters { display: flex; gap: 8px; margin-bottom: 12px; }
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
-.btn { background: #1890FF; color: #FFFFFF; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
-input, select { border: 1px solid #ddd; border-radius: 4px; padding: 6px 8px; }
+/* 使用全局theme.css中的样式类 */
+/* 所有基础样式已在theme.css中定义 */
 </style>

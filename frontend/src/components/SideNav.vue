@@ -19,7 +19,7 @@
 </script>
 
 <style>
-.nav { display: flex; flex-direction: column; padding: 16px; background: linear-gradient(180deg, #184CFF 0%, #0B2AAE 100%); height: calc(100vh - 100px); color: #fff; }
+.nav { display: flex; flex-direction: column; padding: 16px; background: linear-gradient(180deg, #184CFF 0%, #0B2AAE 100%); height: calc(100vh - 60px); color: #fff; }
 .section { margin: 10px 8px; opacity: 0.9; }
 .section.primary { font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }
 .section.secondary { font-weight: 600; font-size: 13px; opacity: 0.85; }

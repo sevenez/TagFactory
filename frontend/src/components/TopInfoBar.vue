@@ -31,9 +31,9 @@ onMounted(async () => { try { const r = await client.get('/api/version'); versio
 </script>
 
 <style>
-.bar { height: 100px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: var(--color-panel); box-shadow: var(--shadow); }
+.bar { height: 60px !important; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: var(--color-panel); box-shadow: var(--shadow); }
 .left { display: flex; align-items: center; gap: 12px; }
-.logo { font-weight: 700; color: var(--color-primary); font-size: 32px; }
+.logo { font-weight: 700; color: var(--color-primary); font-size: 28px; }
 .logo-link { text-decoration: none; cursor: pointer; }
 .center { flex: 1; display: flex; justify-content: center; }
 .search { width: 480px; }
