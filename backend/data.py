@@ -45,9 +45,7 @@ groups: List[GroupInfo] = [
 
 
 data_sources: List[DataSource] = [
-    DataSource(source_id="DS_MYSQL", name="MySQL", connected=True, last_checked_at=datetime.utcnow().isoformat()),
-    DataSource(source_id="DS_REDIS", name="Redis", connected=True, last_checked_at=datetime.utcnow().isoformat()),
-    DataSource(source_id="DS_ODS", name="ODS 文件", connected=False, last_checked_at=datetime.utcnow().isoformat())
+    DataSource(source_id="DS_MYSQL", name="MySQL", connected=True, last_checked_at=datetime.utcnow().isoformat())
 ]
 
 
