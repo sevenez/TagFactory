@@ -92,23 +92,31 @@
    - 显示各服务访问地址
 
 ## 系统功能模块
-- **数据管理**：客户、商家、商品数据的查询、筛选、排序和分页
 - **标签查询**：标签类型与状态筛选，标签详情查看
+- **标签审批**：标签申请审批流程，支持通过/拒绝操作，状态管理和统计
 - **个体画像**：通过用户ID或手机号查询用户画像信息
 - **群体中心**：群体创建、管理和分析
-- **API 文档**：自动生成的 Swagger API 文档
+- **数据管理**：客户、商家、商品数据的查询、筛选和分页（已移除排序功能）
+- **API 模块**：API 调用接口和文档
 
 ## 核心 API 接口
 - **数据管理**：
-  - 客户数据：`GET /data/customers` (支持分页、筛选、排序)
-  - 商家数据：`GET /data/merchants` (支持分页、筛选、排序)
-  - 商品数据：`GET /data/products` (支持分页、筛选、排序)
-  - 数据统计：`GET /data/stats`
+  - 客户数据：`GET /data/customers` (支持分页、筛选)
+  - 商家数据：`GET /data/merchants` (支持分页、筛选)
+  - 商品数据：`GET /data/products` (支持分页、筛选)
+  - 数据统计：`GET /data/statistics`
+  - 连接状态：`GET /data/connection/status`
+  - 刷新连接：`POST /data/connection/refresh`
 
 - **标签管理**：
   - 标签列表：`GET /tags`
   - 标签详情：`GET /tags/{tag_id}`
   - 标签创建：`POST /tags`
+
+- **标签审批**：
+  - 审批列表：`GET /data/approvals/tags` (支持分页、筛选)
+  - 通过审批：`POST /data/approvals/tags/{tag_id}/approve`
+  - 拒绝审批：`POST /data/approvals/tags/{tag_id}/reject`
 
 - **用户画像**：
   - 用户查询：`GET /users/lookup?user_id=10001` 或 `?phone=138***0012`
@@ -169,15 +177,21 @@ TagFactory/
 │     │  └─ theme.css        # 全局主题样式
 │     ├─ components/         # 公共组件
 │     └─ pages/              # 各功能页面
-│        ├─ Data.vue         # 数据管理页面
+│        ├─ Home.vue         # 首页模块卡片
 │        ├─ Tags.vue         # 标签查询页面
+│        ├─ Approvals.vue    # 标签审批页面
 │        ├─ Profile.vue      # 个体画像页面
-│        └─ Groups.vue       # 群体中心页面
+│        ├─ Groups.vue       # 群体中心页面
+│        ├─ Data.vue         # 数据管理页面
+│        └─ Api.vue          # API 模块页面
 ├─ Documents/                # 项目文档
 │  ├─ 标签工厂管理系统（演示版）需求文档.md
 │  └─ 用户信息表、商家信息表、商品信息表.sql
+├─ APPROVALS_MODULE_SUMMARY.md # 标签审批模块重构总结
 ├─ README.md                 # 部署与运行指南
-└─ start_tag_factory.bat     # 一键启动脚本
+├─ start_tag_factory.bat     # 一键启动脚本
+├─ test_db_connection.py     # 数据库连接测试
+└─ test_user_permissions.py  # 用户权限测试
 ```
 
 ## 常见问题与排查
@@ -218,6 +232,18 @@ TagFactory/
    - 配置适当的访问控制
    - 考虑添加 API 认证机制
    - 定期备份数据库
+
+## 最新更新
+### 🎯 标签审批模块重构
+- ✅ 独立主模块：将"标签审批"从数据管理模块分离为独立主功能模块
+- 📍 位置优化：置于"标签查询"之后，提供更清晰的功能导航
+- 📊 完整审批流程：支持审批列表、筛选、通过/拒绝操作和状态统计
+- 🎨 响应式设计：支持桌面端和移动端的良好用户体验
+- 🔧 后端API扩展：新增审批相关API接口，支持完整的审批工作流
+
+### 🗑️ 功能调整
+- ❌ 移除排序功能：数据管理模块移除表头排序功能，简化操作界面
+- 🎯 模块重构：优化功能模块布局，提升系统可用性
 
 ## 版本信息
 - 后端框架：FastAPI 0.104+

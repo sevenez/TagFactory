@@ -2,6 +2,7 @@
   <nav class="nav">
     <div class="section primary">主功能模块</div>
     <router-link to="/tags" class="item sub">🔖 标签查询</router-link>
+    <router-link to="/approvals" class="item sub">✅ 标签审批</router-link>
     <router-link to="/profile" class="item sub">👤 个体画像</router-link>
     <router-link to="/groups" class="item sub">👥 群体中心</router-link>
     <router-link to="/data" class="item sub">🗄️ 数据管理</router-link>

@@ -99,9 +99,105 @@ def refresh_connection():
         return {"connected": False, "error": str(e)}
 
 @app.get("/data/approvals/tags")
-def get_tag_approvals():
+def get_tag_approvals(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    name: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    category: Optional[str] = Query(None)
+):
     """获取标签审批列表"""
-    return []
+    try:
+        # 模拟审批数据，实际应该从数据库查询
+        mock_approvals = [
+            {
+                "tag_id": "T001",
+                "name": "优质商家",
+                "category": "商家标签",
+                "type": "自动生成",
+                "description": "基于评分和好评率自动生成的优质商家标签",
+                "creator": "系统",
+                "status": "pending",
+                "create_time": "2025-11-24T10:00:00Z",
+                "processed_time": None,
+                "processor": None,
+                "remark": None,
+                "usage_count": 0
+            },
+            {
+                "tag_id": "T002", 
+                "name": "高价值客户",
+                "category": "用户标签",
+                "type": "手动创建",
+                "description": "消费金额高且活跃的优质客户标签",
+                "creator": "管理员",
+                "status": "approved",
+                "create_time": "2025-11-23T15:30:00Z",
+                "processed_time": "2025-11-23T16:00:00Z",
+                "processor": "审批员A",
+                "remark": "符合标签规则，批准通过",
+                "usage_count": 156
+            },
+            {
+                "tag_id": "T003",
+                "name": "热销商品",
+                "category": "商品标签", 
+                "type": "自动生成",
+                "description": "月销量超过1000的商品标签",
+                "creator": "系统",
+                "status": "rejected",
+                "create_time": "2025-11-22T09:15:00Z",
+                "processed_time": "2025-11-22T10:00:00Z",
+                "processor": "审批员B",
+                "remark": "阈值设置过低，建议调整为月销量2000以上",
+                "usage_count": 0
+            }
+        ]
+        
+        # 应用筛选条件
+        filtered_approvals = mock_approvals
+        
+        if name:
+            filtered_approvals = [a for a in filtered_approvals if name.lower() in a["name"].lower()]
+        
+        if status:
+            filtered_approvals = [a for a in filtered_approvals if a["status"] == status]
+            
+        if category:
+            filtered_approvals = [a for a in filtered_approvals if a["category"] == category]
+        
+        # 计算总数和分页
+        total = len(filtered_approvals)
+        start_index = (page - 1) * page_size
+        end_index = start_index + page_size
+        paged_approvals = filtered_approvals[start_index:end_index]
+        
+        return {
+            "data": paged_approvals,
+            "total": total,
+            "page": page,
+            "page_size": page_size
+        }
+    except Exception as e:
+        return {"error": f"获取审批列表失败: {str(e)}"}
+
+@app.post("/data/approvals/tags/{tag_id}/approve")
+def approve_tag(tag_id: str):
+    """通过标签审批"""
+    try:
+        # 实际应该更新数据库中的审批状态
+        return {"success": True, "message": f"标签 {tag_id} 审批通过"}
+    except Exception as e:
+        return {"success": False, "error": f"审批通过失败: {str(e)}"}
+
+@app.post("/data/approvals/tags/{tag_id}/reject") 
+def reject_tag(tag_id: str, remark: str = ""):
+    """拒绝标签审批"""
+    try:
+        # 实际应该更新数据库中的审批状态
+        return {"success": True, "message": f"标签 {tag_id} 审批拒绝", "remark": remark}
+    except Exception as e:
+        return {"success": False, "error": f"审批拒绝失败: {str(e)}"}
 
 @app.get("/data/customers")
 def get_customers(

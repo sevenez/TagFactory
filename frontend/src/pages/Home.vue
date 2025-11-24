@@ -11,6 +11,10 @@
         <div class="icon">🔖</div>
         <div class="text">标签查询</div>
       </router-link>
+      <router-link to="/approvals" class="module-card">
+        <div class="icon">✅</div>
+        <div class="text">标签审批</div>
+      </router-link>
       <router-link to="/profile" class="module-card">
         <div class="icon">👤</div>
         <div class="text">个体画像</div>

@@ -282,16 +282,6 @@
         <div v-else class="empty-state">暂无商品数据</div>
       </div>
     </div>
-    
-    <!-- 标签审批部分 -->
-    <div class="title" style="margin-top:24px">标签审批</div>
-    <div v-if="approvals.length > 0" class="approval-list">
-      <div v-for="t in approvals" :key="t.tag_id" class="approval-item">
-        <span class="tag-name">{{ t.name }}</span>
-        <span :class="['status-tag', t.status.toLowerCase()]">{{ t.status }}</span>
-      </div>
-    </div>
-    <div v-else class="empty-state">暂无待审批的标签</div>
   </div>
 </template>
 
@@ -301,7 +291,6 @@ import client from '../api/client'
 
 // 响应式数据
 const sources = ref([])
-const approvals = ref([])
 const connectionStatus = ref('disconnected') // disconnected, connecting, connected, error
 const connectionError = ref('')
 const connectionDetails = ref(null)
@@ -369,10 +358,6 @@ const load = async () => {
     // 获取数据源状态
     const s = await client.get('/data/sources')
     sources.value = s.data
-    
-    // 获取标签审批列表
-    const a = await client.get('/data/approvals/tags')
-    approvals.value = a.data
     
     // 获取连接状态详情
     await loadConnectionStatus()
@@ -1078,59 +1063,6 @@ onMounted(load)
 .page-buttons button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* 审批列表样式 */
-.approval-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.approval-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: var(--color-bg);
-  border-radius: 6px;
-}
-
-.tag-name {
-  font-weight: 500;
-}
-
-.status-tag {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.status-tag.enabled {
-  background: rgba(82, 196, 26, 0.1);
-  color: var(--color-success);
-}
-
-.status-tag.active {
-  background: rgba(82, 196, 26, 0.1);
-  color: var(--color-success);
-}
-
-.status-tag.inactive {
-  background: rgba(153, 153, 153, 0.1);
-  color: #999;
-}
-
-.status-tag.pending {
-  background: rgba(250, 173, 20, 0.1);
-  color: var(--color-warning);
-}
-
-.status-tag.disabled {
-  background: rgba(153, 153, 153, 0.1);
-  color: #999;
 }
 
 /* 空状态样式 */
