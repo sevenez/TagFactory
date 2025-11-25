@@ -1,8 +1,8 @@
 from typing import List
 from uuid import uuid4
 from fastapi import APIRouter
-from ..models import ApiKey, CallStat
-from ..data import VERSION, api_keys, call_stats
+from backend.models import ApiKey, CallStat
+from backend.data import VERSION, api_keys, call_stats
 
 
 router = APIRouter(prefix="/api", tags=["api"])

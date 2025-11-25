@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
-from ..models import UserProfile
-from ..data import users
+from backend.models import UserProfile
+from backend.data import users
 
 
 router = APIRouter(prefix="/users", tags=["users"])

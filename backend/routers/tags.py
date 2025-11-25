@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Query
-from ..models import TagInfo, TagType, TagStatus
-from ..data import tags
+from backend.models import TagInfo, TagType, TagStatus
+from backend.data import tags
 
 
 router = APIRouter(prefix="/tags", tags=["tags"])

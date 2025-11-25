@@ -1,8 +1,8 @@
 from typing import List
 from uuid import uuid4
 from fastapi import APIRouter
-from ..models import GroupInfo, GroupCreateMethod, GroupStatus
-from ..data import groups
+from backend.models import GroupInfo, GroupCreateMethod, GroupStatus
+from backend.data import groups
 
 
 router = APIRouter(prefix="/groups", tags=["groups"])
