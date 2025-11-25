@@ -41,9 +41,26 @@ const createKey = async () => {
 onMounted(load)
 </script>
 
-<style>
+<style scoped>
 /* 使用全局theme.css中的样式类 */
 /* 只需定义此页面特有的样式调整 */
-.box { background: #F5F5F5; border: 1px solid #E8E8E8; }
-.row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.box {
+  background: #F5F5F5;
+  border: 1px solid #E8E8E8;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+/* 为输入框添加宽度 */
+.row input {
+  flex: 1;
+  min-width: 200px;
+}
 </style>

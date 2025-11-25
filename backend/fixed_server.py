@@ -300,6 +300,119 @@ def get_merchants(
     except Exception as e:
         return {"error": f"获取商家数据失败: {str(e)}"}
 
+@app.get("/tags")
+def get_tags(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    type: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    created_at: Optional[str] = Query(None),
+    sort_by: str = Query("created_at"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$")
+):
+    """获取标签数据"""
+    try:
+        # 构建基础查询
+        base_query = "SELECT tag_id, tag_code, tag_name, tag_layer, entity_type as type, status, create_time as created_at, update_time as updated_at FROM tag_definition"
+        count_query = "SELECT COUNT(*) as total FROM tag_definition"
+        
+        # 构建筛选条件
+        filters = []
+        params = []
+        
+        if type:
+            # 转换前端类型到数据库实体类型
+            type_map = {
+                "USER": "CUSTOMER",
+                "MERCHANT": "SELLER",
+                "PRODUCT": "PRODUCT"
+            }
+            db_type = type_map.get(type, type)
+            filters.append("entity_type = %s")
+            params.append(db_type)
+        
+        if name:
+            filters.append("tag_name LIKE %s")
+            params.append(f"%{name}%")
+        
+        if status:
+            # 转换前端状态到数据库状态
+            status_map = {
+                "ENABLED": 1,
+                "DISABLED": 0,
+                "PENDING": 2  # 假设待审核状态对应数据库中的2
+            }
+            db_status = status_map.get(status, 1)
+            filters.append("status = %s")
+            params.append(db_status)
+        
+        if created_at:
+            filters.append("DATE(create_time) = %s")
+            params.append(created_at)
+        
+        # 添加筛选条件到查询
+        if filters:
+            where_clause = " WHERE " + " AND ".join(filters)
+            base_query += where_clause
+            count_query += where_clause
+        
+        # 执行计数查询
+        count_result = execute_query(count_query, tuple(params), fetch_one=True)
+        total = count_result["total"] if count_result else 0
+        
+        # 排序
+        valid_sort_fields = ["tag_id", "tag_name", "entity_type", "status", "create_time"]
+        if sort_by not in valid_sort_fields:
+            sort_by = "create_time"
+        
+        base_query += f" ORDER BY {sort_by} {sort_order}"
+        
+        # 分页
+        offset = (page - 1) * page_size
+        base_query += f" LIMIT %s OFFSET %s"
+        params.extend([page_size, offset])
+        
+        # 执行查询
+        tags = execute_query(base_query, tuple(params))
+        
+        # 转换结果格式
+        formatted_tags = []
+        for tag in tags:
+            # 转换数据库状态到前端状态
+            status_map = {
+                1: "ENABLED",
+                0: "DISABLED",
+                2: "PENDING"
+            }
+            
+            # 转换数据库实体类型到前端类型
+            type_map = {
+                "CUSTOMER": "USER",
+                "SELLER": "MERCHANT",
+                "PRODUCT": "PRODUCT"
+            }
+            
+            formatted_tags.append({
+                "tag_id": tag["tag_id"],
+                "name": tag["tag_name"],
+                "layer": tag.get("tag_layer", tag.get("layer", "未知")),
+                "type": type_map.get(tag["type"], tag["type"]),
+                "status": status_map.get(tag["status"], "ENABLED"),
+                "cover_users": 0,  # 从其他表统计或默认值
+                "created_at": tag["created_at"],
+                "updated_at": tag["updated_at"]
+            })
+        
+        return {
+            "data": formatted_tags,
+            "total": total,
+            "page": page,
+            "page_size": page_size
+        }
+    except Exception as e:
+        return {"error": f"获取标签数据失败: {str(e)}"}
+
 @app.get("/data/products")
 def get_products(
     page: int = Query(1, ge=1),

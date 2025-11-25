@@ -26,7 +26,7 @@ import FooterBar from './components/FooterBar.vue'
   background: var(--color-panel);
 }
 .content { display: flex; flex: 1; }
-.sidenav { width: 160px; }
+.sidenav { width: 200px; }
 .main { flex: 1; }
 .footer { height: 40px; }
 </style>
