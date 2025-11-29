@@ -1,0 +1,7 @@
+user_id,username,password,real_name,role,status
+USER001,admin1,password123,管理员1,ADMIN,1
+USER002,admin2,password123,管理员2,ADMIN,1
+USER003,operator1,password123,操作员1,OPERATOR,1
+USER004,operator2,password123,操作员2,OPERATOR,1
+USER005,auditor1,password123,审批人1,AUDITOR,1
+USER006,auditor2,password123,审批人2,AUDITOR,1

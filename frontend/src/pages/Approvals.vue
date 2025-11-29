@@ -64,8 +64,8 @@
               </span>
             </div>
             <div class="tag-details">
-              <span class="tag-category">{{ approval.category || '未分类' }}</span>
-              <span class="tag-type">{{ approval.type || '普通标签' }}</span>
+              <span class="tag-category">{{ approval.type || '未分类' }}</span>
+              <span class="tag-type">标签</span>
               <span class="tag-creator">创建者: {{ approval.creator || '系统' }}</span>
             </div>
             <div class="tag-description">
@@ -73,11 +73,11 @@
             </div>
             <div class="tag-meta">
               <span class="create-time">创建时间: {{ formatTime(approval.create_time) }}</span>
-              <span class="usage-count">使用次数: {{ approval.usage_count || 0 }}</span>
+              <span class="usage-count">使用次数: 0</span>
             </div>
           </div>
           
-          <div class="approval-actions" v-if="approval.status === 'pending'">
+          <div class="approval-actions" v-if="approval.status?.toLowerCase() === 'pending'">
             <button @click="approveTag(approval.tag_id)" class="approve-btn">
               ✓ 通过
             </button>
@@ -88,11 +88,8 @@
           
           <div class="approval-result" v-else>
             <div class="result-info">
-              <span class="processed-by">处理人: {{ approval.processor || '系统' }}</span>
-              <span class="processed-time">处理时间: {{ formatTime(approval.processed_time) }}</span>
-            </div>
-            <div v-if="approval.remark" class="approval-remark">
-              <strong>备注:</strong> {{ approval.remark }}
+              <span class="processed-by">处理人: 系统</span>
+              <span class="processed-time">处理时间: {{ formatTime(approval.updated_at) }}</span>
             </div>
           </div>
         </div>
@@ -138,9 +135,9 @@ const filters = ref({
 // 计算属性
 const totalPages = computed(() => Math.ceil(totalCount.value / pageSize.value))
 
-const pendingCount = computed(() => approvals.value.filter(a => a.status === 'pending').length)
-const approvedCount = computed(() => approvals.value.filter(a => a.status === 'approved').length)
-const rejectedCount = computed(() => approvals.value.filter(a => a.status === 'rejected').length)
+const pendingCount = computed(() => approvals.value.filter(a => a.status?.toLowerCase() === 'pending').length)
+const approvedCount = computed(() => approvals.value.filter(a => a.status?.toLowerCase() === 'approved').length)
+const rejectedCount = computed(() => approvals.value.filter(a => a.status?.toLowerCase() === 'rejected').length)
 
 // 方法
 const loadApprovals = async () => {
@@ -183,7 +180,7 @@ const rejectTag = async (tagId) => {
     const remark = prompt('请输入拒绝原因:')
     if (!remark) return
     
-    await client.post(`/data/approvals/tags/${tagId}/reject`, { remark })
+    await client.post(`/data/approvals/tags/${tagId}/reject?remark=${encodeURIComponent(remark)}`)
     await loadApprovals()
   } catch (error) {
     console.error('审批拒绝失败:', error)
@@ -197,21 +194,25 @@ const changePage = async (page) => {
 }
 
 const getStatusClass = (status) => {
+  // 处理后端返回的大写状态值
+  const normalizedStatus = status.toLowerCase()
   const statusClasses = {
     pending: 'status-pending',
     approved: 'status-approved',
     rejected: 'status-rejected'
   }
-  return statusClasses[status] || 'status-pending'
+  return statusClasses[normalizedStatus] || 'status-pending'
 }
 
 const getStatusText = (status) => {
+  // 处理后端返回的大写状态值
+  const normalizedStatus = status.toLowerCase()
   const statusTexts = {
     pending: '待审批',
     approved: '已通过',
     rejected: '已拒绝'
   }
-  return statusTexts[status] || '未知'
+  return statusTexts[normalizedStatus] || '未知'
 }
 
 const formatTime = (timeString) => {

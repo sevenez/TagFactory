@@ -69,7 +69,46 @@
 
     <router-link to="/approvals" class="item sub">✅ 标签审批</router-link>
     <router-link to="/profile" class="item sub">👤 个体画像</router-link>
-    <router-link to="/groups" class="item sub">👥 群体中心</router-link>
+    <!-- 群体中心菜单，包含子菜单 -->
+    <div class="menu-item">
+      <div 
+        class="item sub parent" 
+        @click="toggleSubMenu('groups')"
+        :class="{ 'active': isSubMenuActive('groups') }"
+      >
+        👥 群体中心
+        <span class="arrow">{{ subMenus.groups ? '▼' : '▶' }}</span>
+      </div>
+
+      <!-- 子菜单 -->
+      <transition name="slide">
+        <div v-if="subMenus.groups" class="sub-menu">
+          <!-- 群体列表 -->
+          <router-link 
+            to="/groups/list" 
+            class="item sub child"
+            :class="{ 
+              'active': $route.path === '/groups/list',
+              'inactive': $route.path !== '/groups/list'
+            }"
+          >
+            📋 群体列表
+          </router-link>
+
+          <!-- 创建群体 -->
+          <router-link 
+            to="/groups/create" 
+            class="item sub child"
+            :class="{ 
+              'active': $route.path === '/groups/create',
+              'inactive': $route.path !== '/groups/create'
+            }"
+          >
+            ➕ 创建群体
+          </router-link>
+        </div>
+      </transition>
+    </div>
     <router-link to="/data" class="item sub">🗄️ 数据管理</router-link>
     <router-link to="/api" class="item sub">🔌 API 调用</router-link>
 
@@ -86,7 +125,8 @@ const router = useRouter();
 
 // 子菜单展开状态管理
 const subMenus = ref({
-  tags: true // 默认展开标签查询子菜单
+  tags: true, // 默认展开标签查询子菜单
+  groups: true // 默认展开群体中心子菜单
 });
 
 // 切换子菜单展开/折叠
@@ -105,6 +145,9 @@ const isSubMenuActive = (menuName) => {
     const currentPath = route.path;
     const currentType = route.query.type;
     return currentPath === '/tags' && (currentType === 'merchant' || currentType === 'user' || currentType === 'product' || !currentType);
+  } else if (menuName === 'groups') {
+    const currentPath = route.path;
+    return currentPath === '/groups';
   }
   return false;
 };

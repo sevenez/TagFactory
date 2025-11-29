@@ -39,7 +39,7 @@ async def count_calls(request: Request, call_next: Callable):
         c = call_stats[key]
         c.count += 1
     else:
-        from backend.models import CallStat
+        from backend.schemas import CallStat
         call_stats[key] = CallStat(path=request.url.path, method=request.method, count=1)
     response = await call_next(request)
     return response

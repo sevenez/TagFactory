@@ -1,0 +1,9 @@
+application_id,tag_id,applicant_id,application_reason,application_status
+1,1,USER003,需要创建新的用户基础标签,PENDING
+2,2,USER004,需要创建新的用户行为标签,PENDING
+3,3,USER003,需要创建新的商品统计标签,APPROVED
+4,4,USER004,需要创建新的商家衍生标签,APPROVED
+5,5,USER003,需要创建新的用户基础标签,REJECTED
+6,6,USER004,需要创建新的商品行为标签,REJECTED
+7,7,USER003,需要创建新的商家统计标签,WITHDRAWN
+8,8,USER004,需要创建新的用户衍生标签,WITHDRAWN

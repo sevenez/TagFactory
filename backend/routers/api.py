@@ -1,7 +1,7 @@
 from typing import List
 from uuid import uuid4
 from fastapi import APIRouter
-from backend.models import ApiKey, CallStat
+from backend.schemas import ApiKey, CallStat
 from backend.data import VERSION, api_keys, call_stats
 
 

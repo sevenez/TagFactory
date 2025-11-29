@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Query, HTTPException
-from backend.models import TagInfo, TagType, TagStatus
+from backend.schemas import TagInfo, TagType, TagStatus
 from backend.database import execute_query, execute_update
 
 logger = logging.getLogger(__name__)

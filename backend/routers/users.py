@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
-from backend.models import UserProfile
+from backend.schemas import UserProfile
 from backend.database import execute_query
 
 

@@ -61,6 +61,8 @@ class GroupInfo(BaseModel):
     created_at: str
     updated_at: str
     creator: Optional[str] = None
+    entity_type: Optional[str] = None
+    tag_count: Optional[int] = 0
 
 
 class DataSource(BaseModel):

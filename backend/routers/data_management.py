@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
 import logging
-from backend.models import DataSource, TagInfo, TagStatus, TagType
+from backend.schemas import DataSource, TagInfo, TagStatus, TagType
 from backend.data import data_sources, tags
 from backend.database import db_pool, execute_query
 
@@ -28,12 +28,131 @@ def list_sources():
     return data_sources
 
 
-@router.get("/approvals/tags", response_model=List[TagInfo])
-def list_tag_approvals():
+@router.get("/approvals/tags", response_model=Dict[str, Any])
+def list_tag_approvals(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    name: Optional[str] = Query(None, description="标签名称"),
+    status: Optional[str] = Query(None, description="审批状态"),
+    category: Optional[str] = Query(None, description="标签类型")
+):
     """
-    获取待审批的标签列表
+    获取标签审批列表，支持分页、筛选
     """
-    return [t for t in tags if t.status == TagStatus.PENDING or (t.status == TagStatus.DISABLED and t.type == TagType.USER)]
+    try:
+        # 构建查询基础语句，添加索引提示
+        base_query = """
+            SELECT /*+ INDEX(ta idx_tag_application_tag_id_status) INDEX(td idx_tag_definition_tag_id) INDEX(su idx_system_user_user_id) */
+                ta.application_id,
+                td.tag_id,
+                td.tag_name as name,
+                td.entity_type as type,
+                ta.application_status as status,
+                ta.application_reason as description,
+                su.real_name as creator,
+                td.create_time,
+                td.update_time as updated_at,
+                su.user_id as creator_id
+            FROM tag_application ta
+            JOIN tag_definition td ON ta.tag_id = td.tag_id
+            JOIN system_user su ON ta.applicant_id = su.user_id
+            WHERE 1=1
+        """
+        
+        # 构建计数查询，添加索引提示
+        count_query = """
+            SELECT /*+ INDEX(ta idx_tag_application_tag_id_status) INDEX(td idx_tag_definition_tag_id) INDEX(su idx_system_user_user_id) */
+                COUNT(*) as total
+            FROM tag_application ta
+            JOIN tag_definition td ON ta.tag_id = td.tag_id
+            JOIN system_user su ON ta.applicant_id = su.user_id
+            WHERE 1=1
+        """
+        
+        # 构建查询参数
+        params = []
+        
+        # 添加筛选条件
+        if name:
+            base_query += " AND td.tag_name LIKE %s"
+            count_query += " AND td.tag_name LIKE %s"
+            params.append(f"%{name}%")
+        
+        if status:
+            base_query += " AND ta.application_status = %s"
+            count_query += " AND ta.application_status = %s"
+            params.append(status)
+        else:
+            # 默认显示待审批的标签
+            base_query += " AND ta.application_status = 'PENDING'"
+            count_query += " AND ta.application_status = 'PENDING'"
+        
+        if category:
+            base_query += " AND td.entity_type = %s"
+            count_query += " AND td.entity_type = %s"
+            params.append(category)
+        
+        # 执行计数查询
+        count_result = execute_query(count_query, tuple(params), fetch_one=True)
+        total = count_result['total'] if count_result else 0
+        
+        # 添加分页
+        offset = (page - 1) * page_size
+        base_query += " LIMIT %s OFFSET %s"
+        params.extend([page_size, offset])
+        
+        # 执行主查询
+        approvals = execute_query(base_query, tuple(params), fetch_all=True) or []
+        
+        # 数据验证和清洗
+        valid_statuses = {'PENDING', 'APPROVED', 'REJECTED'}
+        cleaned_approvals = []
+        
+        for approval in approvals:
+            # 验证必要字段是否存在
+            if all(key in approval for key in ['tag_id', 'name', 'status', 'create_time']):
+                # 验证状态值是否合法
+                if approval['status'] not in valid_statuses:
+                    approval['status'] = 'PENDING'  # 默认设为待审批
+                
+                # 确保时间字段格式正确
+                if approval.get('create_time'):
+                    try:
+                        # 确保时间字段是字符串格式
+                        approval['create_time'] = str(approval['create_time'])
+                    except:
+                        approval['create_time'] = ''
+                
+                if approval.get('updated_at'):
+                    try:
+                        # 确保时间字段是字符串格式
+                        approval['updated_at'] = str(approval['updated_at'])
+                    except:
+                        approval['updated_at'] = ''
+                
+                cleaned_approvals.append(approval)
+        
+        # 计算总页数
+        total_pages = (total + page_size - 1) // page_size
+        
+        return {
+            "data": cleaned_approvals,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages
+        }
+        
+    except Exception as e:
+        logger.error(f"获取标签审批列表失败: {e}")
+        # 返回空数据，避免前端崩溃
+        return {
+            "data": [],
+            "total": 0,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": 0
+        }
 
 
 @router.post("/connection/refresh")
@@ -66,6 +185,90 @@ def refresh_connection():
         'error': status.get('error', error),
         'status': status
     }
+
+
+@router.post("/approvals/tags/{tag_id}/approve", response_model=Dict[str, Any])
+def approve_tag(tag_id: str):
+    """
+    审批通过标签
+    """
+    try:
+        from backend.database import execute_update
+        
+        # 1. 获取标签申请信息
+        app_query = "SELECT application_id, tag_id FROM tag_application WHERE tag_id = %s AND application_status = 'PENDING'"
+        app_result = execute_query(app_query, (tag_id,), fetch_one=True)
+        if not app_result:
+            raise HTTPException(status_code=404, detail="未找到待审批的标签申请")
+        
+        application_id = app_result['application_id']
+        
+        # 2. 更新标签申请状态为已通过
+        update_app_query = "UPDATE tag_application SET application_status = 'APPROVED', update_time = CURRENT_TIMESTAMP WHERE application_id = %s"
+        execute_update(update_app_query, (application_id,))
+        
+        # 3. 更新标签状态为已通过
+        update_tag_query = "UPDATE tag_definition SET status = 'APPROVED', update_time = CURRENT_TIMESTAMP WHERE tag_id = %s"
+        execute_update(update_tag_query, (tag_id,))
+        
+        # 4. 记录审批记录（这里使用默认审批人，实际应从登录信息获取）
+        insert_record_query = """
+            INSERT INTO approval_record (application_id, approver_id, approval_status, approval_opinion, approval_order)
+            VALUES (%s, 'USER005', 'APPROVED', '标签审批通过', 1)
+        """
+        execute_update(insert_record_query, (application_id,))
+        
+        return {
+            "success": True,
+            "message": "标签审批通过成功"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"标签审批通过失败: {e}")
+        raise HTTPException(status_code=500, detail=f"标签审批通过失败: {str(e)}")
+
+
+@router.post("/approvals/tags/{tag_id}/reject", response_model=Dict[str, Any])
+def reject_tag(tag_id: str, remark: Optional[str] = Query(None, description="拒绝原因")):
+    """
+    拒绝标签审批
+    """
+    try:
+        from backend.database import execute_update
+        
+        # 1. 获取标签申请信息
+        app_query = "SELECT application_id, tag_id FROM tag_application WHERE tag_id = %s AND application_status = 'PENDING'"
+        app_result = execute_query(app_query, (tag_id,), fetch_one=True)
+        if not app_result:
+            raise HTTPException(status_code=404, detail="未找到待审批的标签申请")
+        
+        application_id = app_result['application_id']
+        
+        # 2. 更新标签申请状态为已拒绝
+        update_app_query = "UPDATE tag_application SET application_status = 'REJECTED', update_time = CURRENT_TIMESTAMP WHERE application_id = %s"
+        execute_update(update_app_query, (application_id,))
+        
+        # 3. 更新标签状态为已拒绝
+        update_tag_query = "UPDATE tag_definition SET status = 'REJECTED', update_time = CURRENT_TIMESTAMP WHERE tag_id = %s"
+        execute_update(update_tag_query, (tag_id,))
+        
+        # 4. 记录审批记录（这里使用默认审批人，实际应从登录信息获取）
+        insert_record_query = """
+            INSERT INTO approval_record (application_id, approver_id, approval_status, approval_opinion, approval_order)
+            VALUES (%s, 'USER005', 'REJECTED', %s, 1)
+        """
+        execute_update(insert_record_query, (application_id, remark or '标签审批拒绝'))
+        
+        return {
+            "success": True,
+            "message": "标签审批拒绝成功"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"标签审批拒绝失败: {e}")
+        raise HTTPException(status_code=500, detail=f"标签审批拒绝失败: {str(e)}")
 
 
 @router.get("/connection/status")

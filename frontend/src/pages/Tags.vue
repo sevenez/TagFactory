@@ -52,6 +52,8 @@
               placeholder="创建日期"
             />
             <select v-model="sortBy" class="select">
+              <option value="tag_id:desc">标签ID降序</option>
+              <option value="tag_id:asc">标签ID升序</option>
               <option value="created_at:desc">最新创建</option>
               <option value="created_at:asc">最早创建</option>
               <option value="name:asc">名称升序</option>
@@ -342,7 +344,7 @@ const tagForm = ref({
 const pageSize = ref(20)
 const currentPage = ref(1)
 const totalTags = ref(0)
-const sortBy = ref('created_at')
+const sortBy = ref('tag_id')
 const sortOrder = ref('desc')
 
 // 标签页配置
@@ -480,6 +482,17 @@ const fetchTags = async () => {
       'product': ['PRODUCT']
     }[activeTab.value] : ''
     
+    // 处理排序参数
+    let actualSortBy = sortBy.value
+    let actualSortOrder = sortOrder.value
+    
+    // 如果sortBy包含排序顺序（如"tag_id:desc"），则解析
+    if (sortBy.value.includes(':')) {
+      const [field, order] = sortBy.value.split(':')
+      actualSortBy = field
+      actualSortOrder = order
+    }
+    
     // 构建查询参数
     const params = {
       page: currentPage.value,
@@ -487,8 +500,8 @@ const fetchTags = async () => {
       name: searchKeyword.value,
       status: status.value,
       created_at: created.value,
-      sort_by: sortBy.value,
-      sort_order: sortOrder.value
+      sort_by: actualSortBy,
+      sort_order: actualSortOrder
     }
     
     // 构建URL，处理数组参数
@@ -549,7 +562,7 @@ const reset = () => {
   searchKeyword.value = ''
   status.value = ''
   created.value = ''
-  sortBy.value = 'created_at'
+  sortBy.value = 'tag_id'
   sortOrder.value = 'desc'
   currentPage.value = 1
   fetchTags()
@@ -563,14 +576,26 @@ const changePage = (page) => {
 
 // 处理排序
 const handleSort = (field) => {
-  if (sortBy.value === field) {
-    // 如果点击的是当前排序字段，则切换排序顺序
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    // 否则设置新的排序字段和默认排序顺序
-    sortBy.value = field
-    sortOrder.value = 'desc'
+  // 解析当前排序状态
+  let currentField = sortBy.value
+  let currentOrder = sortOrder.value
+  
+  if (sortBy.value.includes(':')) {
+    const [f, o] = sortBy.value.split(':')
+    currentField = f
+    currentOrder = o
   }
+  
+  let newOrder = 'desc'
+  if (currentField === field) {
+    // 如果点击的是当前排序字段，则切换排序顺序
+    newOrder = currentOrder === 'asc' ? 'desc' : 'asc'
+  }
+  
+  // 更新排序状态，使用下拉菜单支持的格式
+  sortBy.value = `${field}:${newOrder}`
+  sortOrder.value = newOrder
+  
   currentPage.value = 1
   fetchTags()
 }

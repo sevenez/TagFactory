@@ -1,6 +1,6 @@
 from typing import Dict, List
 from datetime import datetime
-from backend.models import TagInfo, TagType, TagStatus, UserProfile, GroupInfo, GroupCreateMethod, GroupStatus, DataSource, ApiKey, CallStat
+from backend.schemas import TagInfo, TagType, TagStatus, UserProfile, GroupInfo, GroupCreateMethod, GroupStatus, DataSource, ApiKey, CallStat
 
 
 VERSION = "V2.5.1"

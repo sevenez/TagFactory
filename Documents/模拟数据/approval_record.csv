@@ -1,0 +1,9 @@
+record_id,application_id,approver_id,approval_time,approval_status,approval_opinion,approval_order
+1,1,USER005,,PENDING,,1
+2,2,USER006,,PENDING,,1
+3,3,USER005,2023-01-10 10:00:00,APPROVED,标签设计合理，同意通过,1
+4,4,USER006,2023-01-11 14:30:00,APPROVED,符合业务需求，同意通过,1
+5,5,USER005,2023-01-12 09:15:00,REJECTED,标签定义不清晰，需要修改,1
+6,6,USER006,2023-01-13 16:45:00,REJECTED,不符合标签设计规范，拒绝通过,1
+7,7,USER005,,PENDING,,1
+8,8,USER006,,PENDING,,1

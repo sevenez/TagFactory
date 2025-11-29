@@ -1,0 +1,21 @@
+group_code,group_name,entity_type,create_method,status,entity_count,creator,description
+HIGH_VALUE_USER,高价值用户,CUSTOMER,RULE,1,1500,admin,消费金额大于10000元且消费频率大于每月2次的用户
+YOUNG_FEMALE_USER,年轻女性用户,CUSTOMER,RULE,1,2300,admin,年龄在18-25岁之间的女性用户
+ACTIVE_USER,活跃用户,CUSTOMER,BEHAVIOR,1,3800,admin,最近30天活跃次数大于10次的用户
+NEW_USER,新注册用户,CUSTOMER,IMPORT,1,500,admin,最近7天注册的新用户
+HOT_PRODUCT,热销商品,PRODUCT,RULE,1,800,admin,月销量大于1000件的商品
+NEW_ARRIVAL_PRODUCT,新品商品,PRODUCT,RULE,1,1200,admin,上市时间小于30天的商品
+DISCOUNT_PRODUCT,优惠商品,PRODUCT,RULE,1,2500,admin,折扣率大于7折的商品
+HIGH_RATED_PRODUCT,高评分商品,PRODUCT,RULE,1,1800,admin,评分大于4.5分的商品
+SELF_OPERATED_SELLER,自营商家,SELLER,RULE,1,50,admin,平台自营的商家
+HIGH_PRAISE_SELLER,高好评率商家,SELLER,RULE,1,120,admin,好评率大于98%的商家
+NEW_SELLER,新入驻商家,SELLER,IMPORT,1,30,admin,最近30天入驻的商家
+RISK_SELLER,高风险商家,SELLER,RULE,0,15,admin,违规次数大于3次的商家
+MALE_TECH_USER,男性科技用户,CUSTOMER,RULE,1,950,admin,男性且购买过电子产品的用户
+FREQUENT_BUYER,频繁购买用户,CUSTOMER,BEHAVIOR,1,2100,admin,近6个月购买次数大于20次的用户
+PREMIUM_MEMBER, premium会员,CUSTOMER,IMPORT,1,750,admin, premium会员用户
+POPULAR_CATEGORY_PRODUCT,热门分类商品,PRODUCT,RULE,1,1600,admin,属于热门分类的商品
+FAST_DELIVERY_SELLER,快速发货商家,SELLER,RULE,1,85,admin,承诺24小时内发货的商家
+LUXURY_PRODUCT,奢侈品,PRODUCT,RULE,1,300,admin,价格大于10000元的商品
+STUDENT_USER,学生用户,CUSTOMER,RULE,1,1400,admin,年龄在18-22岁之间的用户
+LOCAL_SELLER,本地商家,SELLER,RULE,1,200,admin,本地注册的商家
