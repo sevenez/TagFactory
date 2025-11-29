@@ -1,47 +1,6 @@
 <template>
   <div class="card">
-    <div class="title">数据源连接状态</div>
-    
-    <!-- 连接状态和刷新按钮 -->
-    <div class="connection-status">
-      <div v-if="mysqlSource" class="status-container">
-        <div class="status-info">
-          <span class="source-name">{{ mysqlSource.name }}</span>
-          <span :class="['status-badge', getStatusClass(connectionStatus)]">
-            {{ getStatusText(connectionStatus) }}
-          </span>
-          <span class="last-checked" v-if="mysqlSource.last_checked_at">
-            最近检查: {{ formatTime(mysqlSource.last_checked_at) }}
-          </span>
-        </div>
-        <button 
-          class="btn refresh-btn" 
-          @click="handleRefresh"
-          :disabled="connectionStatus === 'connecting'"
-        >
-          <span v-if="connectionStatus === 'connecting'">🔄 连接中...</span>
-          <span v-else>🔄 刷新连接</span>
-        </button>
-      </div>
-      
-      <!-- 错误提示 -->
-      <div v-if="connectionError" class="error-message">
-        <span class="error-icon">⚠️</span>
-        <span>{{ connectionError }}</span>
-      </div>
-      
-      <!-- 连接状态详情 -->
-      <div v-if="connectionDetails" class="connection-details">
-        <div class="detail-item">
-          <span class="label">活跃连接数:</span>
-          <span class="value">{{ connectionDetails.active_connections }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">连接池大小:</span>
-          <span class="value">{{ connectionDetails.pool_size }}</span>
-        </div>
-      </div>
-    </div>
+    <div class="title">数据管理</div>
     
     <!-- 数据展示区域 -->
     <div class="data-section">
@@ -123,7 +82,7 @@
                   <td>{{ customer.province || '-' }}</td>
                   <td :title="formatTime(customer.register_time)">{{ formatTime(customer.register_time) }}</td>
                   <td :title="formatTime(customer.last_active_time)">{{ formatTime(customer.last_active_time) }}</td>
-                  <td>¥{{ customer.total_consume.toFixed(2) }}</td>
+                  <td>¥{{ (Number(customer.total_consume) || 0).toFixed(2) }}</td>
                   <td>{{ customer.consume_months || 0 }}个月</td>
                 </tr>
               </tbody>
@@ -260,8 +219,8 @@
                   <td :title="product.product_name">{{ truncateText(product.product_name, 25) }}</td>
                   <td>{{ product.brand_name }}</td>
                   <td>{{ product.category }}</td>
-                  <td>¥{{ (product.original_price || 0).toFixed(2) }}</td>
-                  <td>¥{{ product.price.toFixed(2) }}</td>
+                  <td>¥{{ (Number(product.original_price) || 0).toFixed(2) }}</td>
+                  <td>¥{{ (Number(product.price) || 0).toFixed(2) }}</td>
                   <td>{{ product.discount_rate }}%</td>
                   <td>{{ product.monthly_sales }}</td>
                   <td>{{ product.buy_customer_count || 0 }}</td>
@@ -286,21 +245,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import client from '../api/client'
 
 // 响应式数据
-const sources = ref([])
-const connectionStatus = ref('disconnected') // disconnected, connecting, connected, error
-const connectionError = ref('')
-const connectionDetails = ref(null)
 const customerCount = ref(0)
 const merchantCount = ref(0)
 const productCount = ref(0)
-const reconnectAttempts = ref(0)
-const maxReconnectAttempts = ref(3)
-
-
 
 // 数据展示相关状态
 const activeTab = ref('customers')
@@ -346,59 +297,6 @@ const productFilters = ref({
 
 // 用于下拉选择的所有商家列表
 const allMerchants = ref([])
-
-// 计算属性
-const mysqlSource = computed(() => {
-  return sources.value.find(s => s.source_id === 'DS_MYSQL')
-})
-
-// 方法
-const load = async () => {
-  try {
-    // 获取数据源状态
-    const s = await client.get('/data/sources')
-    sources.value = s.data
-    
-    // 获取连接状态详情
-    await loadConnectionStatus()
-    
-    // 如果连接成功，加载数据统计
-    if (connectionStatus.value === 'connected') {
-      await loadStatistics()
-      await loadAllData()
-    }
-  } catch (error) {
-    console.error('加载数据失败:', error)
-    if (error.response) {
-      connectionError.value = `服务器错误: ${error.response.status} - ${error.response.statusText}`;
-    } else if (error.request) {
-      connectionError.value = '网络错误: 无法连接到服务器，请检查后端服务是否启动';
-    } else {
-      connectionError.value = `请求错误: ${error.message}`;
-    }
-  }
-}
-
-const loadConnectionStatus = async () => {
-  try {
-    const response = await client.get('/data/connection/status')
-    if (response.data && response.data.status) {
-      connectionDetails.value = response.data.status
-      connectionStatus.value = response.data.status.connected ? 'connected' : 'disconnected'
-      connectionError.value = response.data.status.error || ''
-    }
-  } catch (error) {
-    console.error('获取连接状态失败:', error)
-    connectionStatus.value = 'error'
-    if (error.response) {
-      connectionError.value = `服务器错误: ${error.response.status} - ${error.response.statusText}`;
-    } else if (error.request) {
-      connectionError.value = '网络错误: 无法连接到服务器，请检查后端服务是否启动';
-    } else {
-      connectionError.value = `请求错误: ${error.message}`;
-    }
-  }
-}
 
 // 加载统计数据
 const loadStatistics = async () => {
@@ -492,8 +390,6 @@ const loadProducts = async () => {
     }
   } catch (error) {
     console.error('加载商品数据失败:', error)
-    // 显示友好错误提示
-    connectionError.value = '加载商品数据失败，请稍后重试'
   }
 }
 
@@ -533,8 +429,6 @@ const getMerchantName = (merchantId) => {
   return merchant ? merchant.name : '未知商家'
 }
 
-
-
 // 截断文本
 const truncateText = (text, maxLength) => {
   if (!text || text.length <= maxLength) return text;
@@ -557,8 +451,6 @@ const getStockStatusClass = (status) => {
   }
 }
 
-
-
 // 重置筛选条件
 const resetFilters = (tab) => {
   if (tab === 'customers') {
@@ -575,103 +467,6 @@ const resetFilters = (tab) => {
     productFilters.value.category = '';
     productPage.value = 1;
   }
-}
-
-const handleRefresh = async () => {
-  // 设置为连接中状态
-  connectionStatus.value = 'connecting'
-  connectionError.value = ''
-  reconnectAttempts.value = 0
-  
-  try {
-    const response = await client.post('/data/connection/refresh')
-    
-    if (response.data) {
-      // 更新连接状态
-      if (response.data.connected) {
-        connectionStatus.value = 'connected'
-        connectionError.value = ''
-        // 刷新数据
-        await load()
-      } else {
-        connectionStatus.value = 'error'
-        const errorMsg = response.data.error || '连接失败，请检查数据库配置';
-        connectionError.value = `连接失败: ${errorMsg}`;
-        // 尝试自动重连
-        await autoReconnect()
-      }
-    }
-  } catch (error) {
-    console.error('刷新连接失败:', error)
-    connectionStatus.value = 'error'
-    if (error.response) {
-      connectionError.value = `服务器错误: ${error.response.status} - ${error.response.statusText}`;
-    } else if (error.request) {
-      connectionError.value = '网络错误: 无法连接到服务器，请检查后端服务是否启动';
-    } else {
-      connectionError.value = `请求错误: ${error.message}`;
-    }
-    // 尝试自动重连
-    await autoReconnect()
-  }
-}
-
-const autoReconnect = async () => {
-  reconnectAttempts.value++
-  
-  if (reconnectAttempts.value <= maxReconnectAttempts.value) {
-    // 更新状态为连接中
-    connectionStatus.value = 'connecting'
-    connectionError.value = `正在尝试第 ${reconnectAttempts.value} 次重连...`
-    
-    try {
-      // 等待一小段时间后再尝试重连
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // 再次触发刷新连接
-      const response = await client.post('/data/connection/refresh')
-      
-      if (response.data) {
-        if (response.data.connected) {
-          // 重连成功
-          connectionStatus.value = 'connected'
-          connectionError.value = ''
-          await load()
-        } else {
-          // 重连失败，继续尝试
-          await autoReconnect()
-        }
-      }
-    } catch (error) {
-      console.error(`第 ${reconnectAttempts.value} 次重连失败:`, error)
-      // 重连失败，继续尝试
-      await autoReconnect()
-    }
-  } else {
-    // 达到最大重连次数
-    connectionStatus.value = 'error'
-    connectionError.value = '达到最大重连次数（3次），请检查数据库配置和网络连接后手动重试'
-  }
-}
-
-const getStatusClass = (status) => {
-  const statusClasses = {
-    connected: 'status-connected',
-    connecting: 'status-connecting',
-    disconnected: 'status-disconnected',
-    error: 'status-error'
-  }
-  return statusClasses[status] || 'status-disconnected'
-}
-
-const getStatusText = (status) => {
-  const statusTexts = {
-    connected: '已连接',
-    connecting: '连接中',
-    disconnected: '未连接',
-    error: '连接错误'
-  }
-  return statusTexts[status] || '未知状态'
 }
 
 const formatTime = (timeString) => {
@@ -701,132 +496,14 @@ watch(productFilters, () => {
 }, { deep: true })
 
 // 组件挂载时加载数据
-onMounted(load)
+onMounted(async () => {
+  await loadStatistics()
+  await loadAllData()
+})
 </script>
 
 <style>
 /* 使用全局theme.css中的样式类 */
-/* 连接状态样式 */
-.connection-status {
-  background: var(--color-bg);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.status-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.status-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.source-name {
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.status-connected {
-  background: rgba(82, 196, 26, 0.1);
-  color: var(--color-success);
-}
-
-.status-connecting {
-  background: rgba(250, 173, 20, 0.1);
-  color: var(--color-warning);
-}
-
-.status-disconnected {
-  background: rgba(245, 34, 45, 0.1);
-  color: var(--color-danger);
-}
-
-.status-error {
-  background: rgba(245, 34, 45, 0.1);
-  color: var(--color-danger);
-}
-
-.last-checked {
-  font-size: 12px;
-  color: var(--color-subtext);
-}
-
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.refresh-btn:hover {
-  background: var(--color-primary-hover);
-}
-
-.refresh-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* 错误提示样式 */
-.error-message {
-  background: rgba(245, 34, 45, 0.08);
-  border: 1px solid rgba(245, 34, 45, 0.2);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-danger);
-  font-size: 14px;
-}
-
-.error-icon {
-  font-size: 16px;
-}
-
-/* 连接详情样式 */
-.connection-details {
-  display: flex;
-  gap: 24px;
-  padding: 8px 0;
-  font-size: 14px;
-}
-
-.detail-item {
-  display: flex;
-  gap: 6px;
-}
-
-.detail-item .label {
-  color: var(--color-subtext);
-}
-
-.detail-item .value {
-  font-weight: 600;
-  color: var(--color-text);
-}
-
 /* 数据概览样式 */
 .data-overview {
   display: grid;

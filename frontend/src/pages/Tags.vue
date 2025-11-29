@@ -3,49 +3,8 @@
     <div class="toolbar">
       <div class="title">🔖 标签管理</div>
       <div class="actions">
-        <button class="btn primary">新建标签</button>
+        <button class="btn primary" @click="openCreateTagDialog">新建标签</button>
         <button class="btn secondary">导出数据</button>
-      </div>
-    </div>
-    
-    <!-- 数据库连接状态 -->
-    <div class="connection-status">
-      <div v-if="mysqlSource" class="status-container">
-        <div class="status-info">
-          <span class="source-name">{{ mysqlSource.name }}</span>
-          <span :class="['status-badge', getStatusClass(connectionStatus)]">
-            {{ getStatusText(connectionStatus) }}
-          </span>
-          <span class="last-checked" v-if="mysqlSource.last_checked_at">
-            最近检查: {{ formatTime(mysqlSource.last_checked_at) }}
-          </span>
-        </div>
-        <button 
-          class="btn refresh-btn" 
-          @click="handleRefresh"
-          :disabled="connectionStatus === 'connecting'"
-        >
-          <span v-if="connectionStatus === 'connecting'">🔄 连接中...</span>
-          <span v-else>🔄 刷新连接</span>
-        </button>
-      </div>
-      
-      <!-- 错误提示 -->
-      <div v-if="connectionError" class="error-message">
-        <span class="error-icon">⚠️</span>
-        <span>{{ connectionError }}</span>
-      </div>
-      
-      <!-- 连接状态详情 -->
-      <div v-if="connectionDetails" class="connection-details">
-        <div class="detail-item">
-          <span class="label">活跃连接数:</span>
-          <span class="value">{{ connectionDetails.active_connections }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">连接池大小:</span>
-          <span class="value">{{ connectionDetails.pool_size }}</span>
-        </div>
       </div>
     </div>
     
@@ -113,18 +72,19 @@
         
         <!-- 标签列表 -->
         <div v-else-if="filteredTags.length > 0" class="tags-list">
-          <table class="tags-table">
+          <div class="tags-table-container">
+            <table class="tags-table">
             <thead>
               <tr>
-                <th @click="handleSort('name')" class="sortable">
-                  标签名称
-                  <span class="sort-icon" v-if="sortBy === 'name'">
-                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
-                  </span>
-                </th>
                 <th @click="handleSort('tag_id')" class="sortable">
                   标签ID
                   <span class="sort-icon" v-if="sortBy === 'tag_id'">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="handleSort('name')" class="sortable">
+                  标签名称
+                  <span class="sort-icon" v-if="sortBy === 'name'">
                     {{ sortOrder === 'asc' ? '↑' : '↓' }}
                   </span>
                 </th>
@@ -167,36 +127,35 @@
                 :key="tag.tag_id"
                 class="tag-row"
                 :class="{
-                  'tag-row-user': tag.type === 'USER',
-                  'tag-row-merchant': tag.type === 'MERCHANT',
+                  'tag-row-user': tag.type === 'USER' || tag.type === 'CUSTOMER',
+                  'tag-row-merchant': tag.type === 'MERCHANT' || tag.type === 'SELLER',
                   'tag-row-product': tag.type === 'PRODUCT'
                 }"
               >
+                <td class="tag-id">{{ tag.tag_id }}</td>
                 <td class="tag-name">
-                  <span class="tag-type-icon">{{ getTagTypeIcon(tag.type) }}</span>
                   {{ tag.name }}
                 </td>
-                <td class="tag-id">{{ tag.tag_id }}</td>
                 <td class="tag-type">
-                  <span :class="['tag-type-badge', `tag-type-${tag.type.toLowerCase()}`]">
+                  <span :class="['tag-type-badge', `tag-type-${tag.type?.toLowerCase() || ''}`]">
                     {{ getTagTypeName(tag.type) }}
                   </span>
                 </td>
                 <td class="tag-layer">
-                  <span :class="['tag-layer-badge', `tag-layer-${tag.layer.toLowerCase()}`]">
-                    {{ tag.layer }}
+                  <span :class="['tag-layer-badge', `tag-layer-${tag.layer?.toLowerCase() || ''}`]">
+                    {{ tag.layer || '' }}
                   </span>
                 </td>
                 <td class="tag-coverage">{{ formatNumber(tag.cover_users) }}</td>
                 <td class="tag-status">
-                  <span :class="['tag-status-badge', `tag-status-${tag.status.toLowerCase()}`]">
+                  <span :class="['tag-status-badge', `tag-status-${tag.status?.toLowerCase() || ''}`]">
                     <span class="status-icon">{{ getStatusIcon(tag.status) }}</span>
                     {{ getStatusName(tag.status) }}
                   </span>
                 </td>
                 <td class="tag-created">{{ formatDate(tag.created_at) }}</td>
                 <td class="tag-actions">
-                  <button class="action-btn edit-btn" title="编辑">
+                  <button class="action-btn edit-btn" title="编辑" @click="openEditTagDialog(tag)">
                     ✏️
                   </button>
                   <button 
@@ -227,8 +186,9 @@
               </tr>
             </tbody>
           </table>
-          
-          <!-- 分页控件 -->
+          </div>
+            
+            <!-- 分页控件 -->
           <div class="pagination">
             <div class="page-info">
               显示 {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalTags) }} 条，共 {{ totalTags }} 条
@@ -283,6 +243,65 @@
         </div>
       </div>
     </div>
+    
+    <!-- 标签编辑/创建对话框 -->
+    <div v-if="showTagDialog" class="confirm-overlay">
+      <div class="confirm-dialog" style="width: 500px;">
+        <div class="confirm-title">{{ isEditMode ? '编辑标签' : '新建标签' }}</div>
+        <div class="tag-form">
+          <div class="form-group">
+            <label class="form-label">标签名称</label>
+            <input 
+              v-model="tagForm.name" 
+              type="text" 
+              class="form-input" 
+              placeholder="请输入标签名称"
+              required
+            />
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group" style="flex: 1; margin-right: 10px;">
+              <label class="form-label">标签类型</label>
+              <select v-model="tagForm.type" class="form-input">
+                <option value="USER">客户标签</option>
+                <option value="MERCHANT">商家标签</option>
+                <option value="PRODUCT">商品标签</option>
+              </select>
+            </div>
+            
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">标签状态</label>
+              <select v-model="tagForm.status" class="form-input">
+                <option value="ENABLED">已启用</option>
+                <option value="PENDING">待审核</option>
+                <option value="DISABLED">已停用</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">标签描述</label>
+            <textarea 
+              v-model="tagForm.description" 
+              class="form-input" 
+              rows="3" 
+              placeholder="请输入标签描述"
+            ></textarea>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="btn secondary" @click="cancelTagDialog">取消</button>
+          <button 
+            class="btn primary" 
+            @click="saveTag" 
+            :disabled="savingTag"
+          >
+            {{ savingTag ? '保存中...' : '保存' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -293,14 +312,6 @@ import client from '../api/client'
 
 // 获取路由信息
 const route = useRoute()
-
-// 数据库连接管理
-const sources = ref([])
-const connectionStatus = ref('disconnected') // disconnected, connecting, connected, error
-const connectionError = ref('')
-const connectionDetails = ref(null)
-const reconnectAttempts = ref(0)
-const maxReconnectAttempts = ref(3)
 
 // 响应式数据
 const activeTab = ref('all')
@@ -315,6 +326,18 @@ const confirmTitle = ref('')
 const confirmContent = ref('')
 const currentTag = ref(null)
 
+// 标签编辑/创建相关
+const showTagDialog = ref(false)
+const isEditMode = ref(false)
+const savingTag = ref(false)
+const tagForm = ref({
+  tag_id: '',
+  name: '',
+  type: 'USER',
+  status: 'PENDING',
+  description: ''
+})
+
 // 分页设置
 const pageSize = ref(20)
 const currentPage = ref(1)
@@ -325,23 +348,26 @@ const sortOrder = ref('desc')
 // 标签页配置
 const tabs = [
   { key: 'all', name: '全部标签', icon: '📋' },
-  { key: 'user', name: '用户标签', icon: '🧑' },
+  { key: 'user', name: '客户标签', icon: '🧑' },
   { key: 'merchant', name: '商家标签', icon: '🏪' },
   { key: 'product', name: '商品标签', icon: '📦' }
 ]
 
 // 计算属性：筛选后的标签列表
 const filteredTags = computed(() => {
-  return tags.value.filter(tag => {
+  const result = tags.value.filter(tag => {
     // 标签类型筛选
     if (activeTab.value !== 'all') {
-      const tagTypeMap = {
-        'user': 'USER',
-        'merchant': 'MERCHANT',
-        'product': 'PRODUCT'
-      }
-      if (tag.type !== tagTypeMap[activeTab.value]) {
-        return false
+      const userTypes = ['USER', 'CUSTOMER']
+      const merchantTypes = ['MERCHANT', 'SELLER']
+      const productTypes = ['PRODUCT']
+      
+      if (activeTab.value === 'user') {
+        return userTypes.includes(tag.type)
+      } else if (activeTab.value === 'merchant') {
+        return merchantTypes.includes(tag.type)
+      } else if (activeTab.value === 'product') {
+        return productTypes.includes(tag.type)
       }
     }
     
@@ -365,6 +391,8 @@ const filteredTags = computed(() => {
     
     return true
   })
+  
+  return result
 })
 
 // 计算总页数
@@ -390,49 +418,13 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// 计算属性：MySQL数据源
-const mysqlSource = computed(() => {
-  return sources.value.find(s => s.source_id === 'DS_MYSQL')
-})
-
-// 数据库连接状态样式
-const getStatusClass = (status) => {
-  const statusClasses = {
-    connected: 'status-connected',
-    connecting: 'status-connecting',
-    disconnected: 'status-disconnected',
-    error: 'status-error'
-  }
-  return statusClasses[status] || 'status-disconnected'
-}
-
-// 数据库连接状态文本
-const getStatusText = (status) => {
-  const statusTexts = {
-    connected: '已连接',
-    connecting: '连接中',
-    disconnected: '未连接',
-    error: '连接错误'
-  }
-  return statusTexts[status] || '未知状态'
-}
-
-// 格式化时间
-const formatTime = (timeString) => {
-  if (!timeString) return ''
-  try {
-    const date = new Date(timeString)
-    return date.toLocaleString('zh-CN')
-  } catch {
-    return timeString
-  }
-}
-
 // 标签类型映射
 const getTagTypeName = (type) => {
   const typeMap = {
-    'USER': '用户标签',
+    'USER': '客户标签',
+    'CUSTOMER': '客户标签',
     'MERCHANT': '商家标签',
+    'SELLER': '商家标签',
     'PRODUCT': '商品标签'
   }
   return typeMap[type] || type
@@ -442,7 +434,9 @@ const getTagTypeName = (type) => {
 const getTagTypeIcon = (type) => {
   const iconMap = {
     'USER': '👤',
+    'CUSTOMER': '👤',
     'MERCHANT': '🏪',
+    'SELLER': '🏪',
     'PRODUCT': '📦'
   }
   return iconMap[type] || '🏷️'
@@ -475,147 +469,21 @@ const switchTab = (tabKey) => {
   fetchTags()
 }
 
-// 加载数据源和连接状态
-const load = async () => {
-  try {
-    // 获取数据源状态
-    const s = await client.get('/data/sources')
-    sources.value = s.data
-    
-    // 获取连接状态详情
-    await loadConnectionStatus()
-    
-    // 如果连接成功，加载标签数据
-    if (connectionStatus.value === 'connected') {
-      await fetchTags()
-    }
-  } catch (error) {
-    console.error('加载数据失败:', error)
-    connectionError.value = error.response?.data?.message || '加载数据失败，请稍后重试'
-  }
-}
-
-// 加载数据库连接状态
-const loadConnectionStatus = async () => {
-  try {
-    const response = await client.get('/data/connection/status')
-    if (response.data && response.data.status) {
-      connectionDetails.value = response.data.status
-      connectionStatus.value = response.data.status.connected ? 'connected' : 'disconnected'
-      connectionError.value = response.data.status.error || ''
-    }
-  } catch (error) {
-    console.error('获取连接状态失败:', error)
-    connectionStatus.value = 'error'
-    if (error.response) {
-      connectionError.value = `服务器错误: ${error.response.status} - ${error.response.statusText}`;
-    } else if (error.request) {
-      connectionError.value = '网络错误: 无法连接到服务器，请检查后端服务是否启动';
-    } else {
-      connectionError.value = `请求错误: ${error.message}`;
-    }
-  }
-}
-
-// 自动重连功能
-const autoReconnect = async () => {
-  reconnectAttempts.value++
-  
-  if (reconnectAttempts.value <= maxReconnectAttempts.value) {
-    // 更新状态为连接中
-    connectionStatus.value = 'connecting'
-    connectionError.value = `正在尝试第 ${reconnectAttempts.value} 次重连...`
-    
-    try {
-      // 等待一小段时间后再尝试重连
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // 再次触发刷新连接
-      const response = await client.post('/data/connection/refresh')
-      
-      if (response.data) {
-        if (response.data.connected) {
-          // 重连成功
-          connectionStatus.value = 'connected'
-          connectionError.value = ''
-          await fetchTags()
-        } else {
-          // 重连失败，继续尝试
-          await autoReconnect()
-        }
-      }
-    } catch (error) {
-      console.error(`第 ${reconnectAttempts.value} 次重连失败:`, error)
-      // 重连失败，继续尝试
-      await autoReconnect()
-    }
-  } else {
-    // 达到最大重连次数
-    connectionStatus.value = 'error'
-    connectionError.value = '达到最大重连次数（3次），请检查数据库配置和网络连接后手动重试'
-  }
-}
-
-// 刷新数据库连接 - 与模板中的调用名称匹配
-const handleRefresh = async () => {
-  // 设置为连接中状态
-  connectionStatus.value = 'connecting'
-  connectionError.value = ''
-  reconnectAttempts.value = 0
-  
-  try {
-    const response = await client.post('/data/connection/refresh')
-    
-    if (response.data) {
-      // 更新连接状态
-      if (response.data.connected) {
-        connectionStatus.value = 'connected'
-        connectionError.value = ''
-        // 刷新数据
-        await load()
-      } else {
-        connectionStatus.value = 'error'
-        const errorMsg = response.data.error || '连接失败，请检查数据库配置';
-        connectionError.value = `连接失败: ${errorMsg}`;
-        // 尝试自动重连
-        await autoReconnect()
-      }
-    }
-  } catch (error) {
-    console.error('刷新连接失败:', error)
-    connectionStatus.value = 'error'
-    if (error.response) {
-      connectionError.value = `服务器错误: ${error.response.status} - ${error.response.statusText}`;
-    } else if (error.request) {
-      connectionError.value = '网络错误: 无法连接到服务器，请检查后端服务是否启动';
-    } else {
-      connectionError.value = `请求错误: ${error.message}`;
-    }
-    // 尝试自动重连
-    await autoReconnect()
-  }
-}
-
 // 获取标签数据
 const fetchTags = async () => {
   loading.value = true
   try {
-    // 确保数据库连接正常
-    if (connectionStatus.value !== 'connected') {
-      await loadConnectionStatus()
-      if (connectionStatus.value !== 'connected') {
-        throw new Error('数据库连接失败，请检查连接状态')
-      }
-    }
+    // 根据当前活跃页签设置标签类型筛选条件
+    const type = activeTab.value !== 'all' ? {
+      'user': ['USER', 'CUSTOMER'],
+      'merchant': ['MERCHANT', 'SELLER'],
+      'product': ['PRODUCT']
+    }[activeTab.value] : ''
     
+    // 构建查询参数
     const params = {
       page: currentPage.value,
       page_size: pageSize.value,
-      type: activeTab.value === 'all' ? '' : {
-        'user': 'USER',
-        'merchant': 'MERCHANT',
-        'product': 'PRODUCT'
-      }[activeTab.value],
       name: searchKeyword.value,
       status: status.value,
       created_at: created.value,
@@ -623,15 +491,54 @@ const fetchTags = async () => {
       sort_order: sortOrder.value
     }
     
-    const response = await client.get('/tags', { params })
+    // 构建URL，处理数组参数
+    let url = '/tags?'
+    const queryParams = []
+    
+    // 添加基本参数
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== '' && value !== null && value !== undefined) {
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      }
+    }
+    
+    // 添加类型参数，处理数组
+    if (type && type.length > 0) {
+      for (const t of type) {
+        queryParams.push(`type=${encodeURIComponent(t)}`)
+      }
+    }
+    
+    // 构建完整URL
+    url += queryParams.join('&')
+    
+    console.log('=== 开始请求标签数据 ===')
+    console.log('当前活跃页签:', activeTab.value)
+    console.log('标签类型:', type)
+    console.log('请求URL:', url)
+    
+    const response = await client.get(url)
+    
+    console.log('=== 标签数据请求成功 ===')
+    console.log('响应数据:', response.data)
+    
     if (response.data) {
       tags.value = response.data.data || []
       totalTags.value = response.data.total || 0
+      console.log('处理后的数据:', {
+        tags: tags.value,
+        totalTags: totalTags.value,
+        tagsLength: tags.value.length
+      })
     }
   } catch (error) {
-    console.error('获取标签数据失败:', error)
-    connectionError.value = error.response?.data?.error || error.message || '获取标签数据失败，请稍后重试'
-    connectionStatus.value = 'error'
+    console.error('=== 获取标签数据失败 ===')
+    console.error('错误信息:', error)
+    console.error('错误类型:', error.type)
+    console.error('错误状态:', error.status)
+    console.error('错误响应:', error.response)
+    // 显示错误信息给用户
+    alert('获取标签数据失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -668,28 +575,6 @@ const handleSort = (field) => {
   fetchTags()
 }
 
-// 获取连接状态样式类
-const getConnectionStatusClass = (status) => {
-  const statusClasses = {
-    connected: 'status-connected',
-    connecting: 'status-connecting',
-    disconnected: 'status-disconnected',
-    error: 'status-error'
-  }
-  return statusClasses[status] || 'status-disconnected'
-}
-
-// 获取连接状态文本
-const getConnectionStatusText = (status) => {
-  const statusTexts = {
-    connected: '已连接',
-    connecting: '连接中',
-    disconnected: '未连接',
-    error: '连接错误'
-  }
-  return statusTexts[status] || '未知状态'
-}
-
 // 启用标签
 const enableTag = async (tagId) => {
   try {
@@ -697,6 +582,7 @@ const enableTag = async (tagId) => {
     await fetchTags()
   } catch (error) {
     console.error('启用标签失败:', error)
+    alert('启用标签失败，请稍后重试')
   }
 }
 
@@ -707,6 +593,7 @@ const disableTag = async (tagId) => {
     await fetchTags()
   } catch (error) {
     console.error('停用标签失败:', error)
+    alert('停用标签失败，请稍后重试')
   }
 }
 
@@ -717,6 +604,7 @@ const deleteTag = async (tagId) => {
     await fetchTags()
   } catch (error) {
     console.error('删除标签失败:', error)
+    alert('删除标签失败，请稍后重试')
   }
 }
 
@@ -776,6 +664,70 @@ const handleDelete = (tag) => {
   )
 }
 
+// 打开创建标签对话框
+const openCreateTagDialog = () => {
+  isEditMode.value = false
+  tagForm.value = {
+    tag_id: '',
+    name: '',
+    type: 'USER',
+    status: 'PENDING',
+    description: ''
+  }
+  showTagDialog.value = true
+}
+
+// 打开编辑标签对话框
+const openEditTagDialog = (tag) => {
+  isEditMode.value = true
+  tagForm.value = {
+    tag_id: tag.tag_id,
+    name: tag.name,
+    type: tag.type,
+    status: tag.status,
+    description: tag.description || ''
+  }
+  showTagDialog.value = true
+}
+
+// 保存标签
+const saveTag = async () => {
+  if (!tagForm.value.name.trim()) {
+    alert('标签名称不能为空')
+    return
+  }
+  
+  savingTag.value = true
+  try {
+    if (isEditMode.value) {
+      // 更新标签
+      await client.put(`/tags/${tagForm.value.tag_id}`, tagForm.value)
+    } else {
+      // 创建标签
+      await client.post('/tags', tagForm.value)
+    }
+    
+    // 关闭对话框
+    showTagDialog.value = false
+    
+    // 刷新标签列表
+    await fetchTags()
+    
+    // 显示成功消息
+    alert(isEditMode.value ? '标签更新成功' : '标签创建成功')
+  } catch (error) {
+    console.error(isEditMode.value ? '更新标签失败:' : '创建标签失败:', error)
+    alert(isEditMode.value ? '更新标签失败，请稍后重试' : '创建标签失败，请稍后重试')
+  } finally {
+    savingTag.value = false
+  }
+}
+
+// 取消标签对话框
+const cancelTagDialog = () => {
+  showTagDialog.value = false
+}
+
 // 格式化日期
 const formatDate = (dateString) => {
   return dateString ? dateString.substring(0, 10) : ''
@@ -806,7 +758,7 @@ watch([searchKeyword, status, created, sortBy, sortOrder], () => {
 }, { deep: true })
 
 // 组件挂载时获取数据
-onMounted(load)
+onMounted(fetchTags)
 </script>
 
 <style scoped>
@@ -814,98 +766,8 @@ onMounted(load)
   width: 100%;
   padding: 20px;
   background-color: #f5f7fa;
-  min-height: 100vh;
-}
-
-/* 数据库连接状态样式 */
-.connection-status {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 16px;
-  margin-bottom: 20px;
-}
-
-.status-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.status-label {
-  font-weight: 500;
-  color: #606266;
-}
-
-.status-badge {
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.status-connected {
-  background: rgba(82, 196, 26, 0.1);
-  color: #67c23a;
-}
-
-.status-connecting {
-  background: rgba(250, 173, 20, 0.1);
-  color: #e6a23c;
-}
-
-.status-disconnected {
-  background: rgba(245, 34, 45, 0.1);
-  color: #f56c6c;
-}
-
-.status-error {
-  background: rgba(245, 34, 45, 0.1);
-  color: #f56c6c;
-}
-
-.refresh-btn {
-  padding: 6px 12px;
-  font-size: 14px;
-}
-
-.error-message {
-  background: rgba(245, 34, 45, 0.08);
-  border: 1px solid rgba(245, 34, 45, 0.2);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #f56c6c;
-  font-size: 14px;
-}
-
-.error-icon {
-  font-size: 16px;
-}
-
-.connection-details {
-  display: flex;
-  gap: 24px;
-  padding: 8px 0;
-  font-size: 14px;
-}
-
-.detail-item {
-  display: flex;
-  gap: 6px;
-}
-
-.detail-label {
-  color: #909399;
-}
-
-.detail-value {
-  font-weight: 600;
-  color: #303133;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -1100,15 +962,28 @@ onMounted(load)
 /* 标签列表样式 */
 .tags-list {
   overflow-x: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.tags-table-container {
+  height: 600px;
+  overflow: auto;
+  border-radius: 6px;
 }
 
 .tags-table {
   width: 100%;
   border-collapse: collapse;
   background-color: white;
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  table-layout: fixed;
+}
+
+.tags-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f5f7fa;
 }
 
 .tags-table th {
@@ -1121,6 +996,7 @@ onMounted(load)
   border-bottom: 2px solid #e4e7ed;
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .tags-table th:hover {
@@ -1138,9 +1014,19 @@ onMounted(load)
   color: #909399;
 }
 
+.tags-table tbody {
+  display: table-row-group;
+}
+
+.tags-table thead tr,
+.tags-table tbody tr {
+  display: table-row;
+  width: 100%;
+  table-layout: fixed;
+}
+
 .tag-row {
   transition: all 0.3s ease;
-  border-bottom: 1px solid #ebeef5;
 }
 
 .tag-row:hover {
@@ -1165,12 +1051,11 @@ onMounted(load)
   padding: 15px;
   font-size: 14px;
   color: #606266;
+  border-bottom: 1px solid #ebeef5;
 }
 
 /* 标签名称样式 */
 .tag-name {
-  display: flex;
-  align-items: center;
   font-weight: 500;
   color: #303133;
 }
@@ -1194,12 +1079,14 @@ onMounted(load)
   font-weight: 500;
 }
 
-.tag-type-user {
+.tag-type-user,
+.tag-type-customer {
   background-color: #ecf5ff;
   color: #409eff;
 }
 
-.tag-type-merchant {
+.tag-type-merchant,
+.tag-type-seller {
   background-color: #f0f9eb;
   color: #67c23a;
 }
@@ -1451,26 +1338,62 @@ onMounted(load)
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 20px;
+}
+
+/* 标签表单样式 */
+.tag-form {
+  margin-top: 15px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #606266;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+}
+
+.form-input[type="text"],
+.form-input[type="number"] {
+  height: 36px;
+}
+
+.form-input[type="textarea"] {
+  resize: vertical;
+  min-height: 80px;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .tags-container {
     padding: 10px;
-  }
-  
-  .connection-status {
-    padding: 12px;
-  }
-  
-  .status-info {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .connection-details {
-    flex-direction: column;
-    gap: 8px;
   }
   
   .toolbar {

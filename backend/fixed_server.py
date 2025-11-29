@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import sys
 import os
@@ -127,7 +127,7 @@ def get_tag_approvals(
             {
                 "tag_id": "T002", 
                 "name": "高价值客户",
-                "category": "用户标签",
+                "category": "客户标签",
                 "type": "手动创建",
                 "description": "消费金额高且活跃的优质客户标签",
                 "creator": "管理员",
@@ -467,6 +467,52 @@ def get_products(
         }
     except Exception as e:
         return {"error": f"获取商品数据失败: {str(e)}"}
+
+# 定义用户数据
+user_data = {
+    "10001": {
+        "user_id": "10001",
+        "phone": "138***0012",
+        "registered_at": "2025-10-01T09:00:00",
+        "last_active_at": "2025-11-20T20:00:00",
+        "basic_tags": {"性别": "男", "年龄段": "25-34"},
+        "behavior_tags": {"最近7天访问次数": 5, "最近30天下单次数": 2},
+        "stats_tags": {"累计消费金额": 1200.5, "订单数": 8},
+        "derived_tags": {"忠诚度": "中"}
+    },
+    "10002": {
+        "user_id": "10002",
+        "phone": "139***7788",
+        "registered_at": "2025-09-15T11:00:00",
+        "last_active_at": "2025-11-18T21:00:00",
+        "basic_tags": {"性别": "女", "年龄段": "18-24"},
+        "behavior_tags": {"最近7天访问次数": 10, "最近30天下单次数": 5},
+        "stats_tags": {"累计消费金额": 3500.0, "订单数": 20},
+        "derived_tags": {"忠诚度": "高"}
+    }
+}
+
+@app.get("/users/lookup")
+def lookup_user(
+    user_id: Optional[str] = Query(default=None),
+    phone: Optional[str] = Query(default=None)
+):
+    """根据用户ID或手机号查询用户画像"""
+    try:
+        if user_id:
+            if user_id in user_data:
+                return user_data[user_id]
+            raise HTTPException(status_code=404, detail="用户不存在")
+        if phone:
+            for u in user_data.values():
+                if phone in u.phone:
+                    return u
+            raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=400, detail="参数错误")
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {"error": f"查询用户画像失败: {str(e)}"}
 
 if __name__ == "__main__":
     import uvicorn

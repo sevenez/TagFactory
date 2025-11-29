@@ -1,8 +1,8 @@
 -- 标签定义初始化SQL
 USE tagfactory;
 
--- 1. 用户标签定义
--- 1.1 用户基础标签
+-- 1. 客户标签定义
+-- 1.1 客户基础标签
 INSERT INTO tag_definition (tag_code, tag_name, tag_layer, entity_type, data_type, update_frequency) VALUES
 ('C_BAS_GENDER', '性别识别', '基础', 'CUSTOMER', 'ENUM', 'REALTIME'),
 ('C_BAS_AGE_BIN', '年龄段', '基础', 'CUSTOMER', 'ENUM', 'REALTIME'),
@@ -10,15 +10,15 @@ INSERT INTO tag_definition (tag_code, tag_name, tag_layer, entity_type, data_typ
 ('C_BAS_REGION', '地域分布', '基础', 'CUSTOMER', 'ENUM', 'REALTIME'),
 ('C_BAS_TENURE', '入会时长', '基础', 'CUSTOMER', 'ENUM', 'DAILY');
 
--- 1.2 用户统计标签
+-- 1.2 客户统计标签
 INSERT INTO tag_definition (tag_code, tag_name, tag_layer, entity_type, data_type, update_frequency) VALUES
 ('C_STA_MONETARY', '消费能力', '统计', 'CUSTOMER', 'ENUM', 'DAILY'),
 ('C_STA_FREQ', '购买频次', '统计', 'CUSTOMER', 'ENUM', 'DAILY'),
 ('C_STA_ATV', '客单价等级', '统计', 'CUSTOMER', 'ENUM', 'DAILY');
 
--- 1.3 用户衍生标签
+-- 1.3 客户衍生标签
 INSERT INTO tag_definition (tag_code, tag_name, tag_layer, entity_type, data_type, update_frequency) VALUES
-('C_DRV_RFM', '用户价值(RFM)', '衍生', 'CUSTOMER', 'ENUM', 'DAILY'),
+('C_DRV_RFM', '客户价值(RFM)', '衍生', 'CUSTOMER', 'ENUM', 'DAILY'),
 ('C_DRV_PREF', '数码偏好', '衍生', 'CUSTOMER', 'ENUM', 'DAILY');
 
 -- 2. 商品标签定义

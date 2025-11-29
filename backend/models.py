@@ -7,6 +7,7 @@ class TagType(str, Enum):
     USER = "USER"
     MERCHANT = "MERCHANT"
     PRODUCT = "PRODUCT"
+    CUSTOMER = "CUSTOMER"
 
 
 class TagStatus(str, Enum):

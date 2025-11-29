@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <div class="title">标签审批</div>
+    <div class="title">标签审批（演示）</div>
     
     <!-- 审批状态统计 -->
     <div class="stats-container">

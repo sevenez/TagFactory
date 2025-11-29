@@ -1,9 +1,13 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
+import logging
 from backend.models import DataSource, TagInfo, TagStatus, TagType
 from backend.data import data_sources, tags
 from backend.database import db_pool, execute_query
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/data", tags=["data"])
@@ -88,16 +92,16 @@ def get_statistics():
     """
     try:
         # 获取客户总数
-        customer_result = execute_query("SELECT COUNT(*) FROM customer_info WHERE is_deleted = 0", fetch_one=True)
-        customer_count = list(customer_result.values())[0] if customer_result else 0
+        customer_result = execute_query("SELECT COUNT(*) as total FROM customer_info WHERE is_deleted = 0", fetch_one=True)
+        customer_count = customer_result['total'] if customer_result else 0
         
         # 获取商家总数
-        merchant_result = execute_query("SELECT COUNT(*) FROM seller_info WHERE status = 1", fetch_one=True)
-        merchant_count = list(merchant_result.values())[0] if merchant_result else 0
+        merchant_result = execute_query("SELECT COUNT(*) as total FROM seller_info WHERE status = 1", fetch_one=True)
+        merchant_count = merchant_result['total'] if merchant_result else 0
         
         # 获取商品总数
-        product_result = execute_query("SELECT COUNT(*) FROM product_info WHERE status = 1", fetch_one=True)
-        product_count = list(product_result.values())[0] if product_result else 0
+        product_result = execute_query("SELECT COUNT(*) as total FROM product_info WHERE status = 1", fetch_one=True)
+        product_count = product_result['total'] if product_result else 0
         
         return {
             "customers": customer_count,
@@ -105,7 +109,13 @@ def get_statistics():
             "products": product_count
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取统计数据失败: {str(e)}")
+        logger.error(f"获取统计数据失败: {e}")
+        # 返回默认值，避免前端崩溃
+        return {
+            "customers": 0,
+            "merchants": 0,
+            "products": 0
+        }
 
 
 # 获取客户数据接口
@@ -129,8 +139,8 @@ def get_customers(
         
         # 添加筛选条件
         if name:
-            base_query += " AND customer_id LIKE %s OR phone LIKE %s"
-            count_query += " AND customer_id LIKE %s OR phone LIKE %s"
+            base_query += " AND (customer_id LIKE %s OR phone LIKE %s)"
+            count_query += " AND (customer_id LIKE %s OR phone LIKE %s)"
             params.extend([f"%{name}%", f"%{name}%"])
         
         # 添加排序，映射排序字段
@@ -148,8 +158,9 @@ def get_customers(
         pagination_params.extend([page_size, offset])
         
         # 执行查询
-        customers = execute_query(base_query, pagination_params, fetch_all=True)
-        total_count = execute_query(count_query, params, fetch_one=True)[0]
+        customers = execute_query(base_query, pagination_params, fetch_all=True) or []
+        count_result = execute_query(count_query, params, fetch_one=True)
+        total_count = list(count_result.values())[0] if count_result else 0
         
         return {
             "data": customers,
@@ -183,8 +194,8 @@ def get_merchants(
         
         # 添加筛选条件
         if name:
-            base_query += " AND seller_name LIKE %s OR credit_code LIKE %s"
-            count_query += " AND seller_name LIKE %s OR credit_code LIKE %s"
+            base_query += " AND (seller_name LIKE %s OR credit_code LIKE %s)"
+            count_query += " AND (seller_name LIKE %s OR credit_code LIKE %s)"
             params.extend([f"%{name}%", f"%{name}%"])
         
         if category:
@@ -208,8 +219,9 @@ def get_merchants(
         pagination_params.extend([page_size, offset])
         
         # 执行查询
-        merchants = execute_query(base_query, pagination_params, fetch_all=True)
-        total_count = execute_query(count_query, params, fetch_one=True)[0]
+        merchants = execute_query(base_query, pagination_params, fetch_all=True) or []
+        count_result = execute_query(count_query, params, fetch_one=True)
+        total_count = list(count_result.values())[0] if count_result else 0
         
         return {
             "data": merchants,
@@ -230,7 +242,7 @@ def get_products(
     sort_by: Optional[str] = Query("id", description="排序字段"),
     sort_order: Optional[str] = Query("asc", regex="^(asc|desc)$", description="排序方向"),
     name: Optional[str] = Query(None, description="商品名称搜索"),
-    merchant_id: Optional[int] = Query(None, description="商家ID筛选"),
+    merchant_id: Optional[str] = Query(None, description="商家ID筛选"),
     category: Optional[str] = Query(None, description="商品类别筛选")
 ):
     """
@@ -244,8 +256,8 @@ def get_products(
         
         # 添加筛选条件
         if name:
-            base_query += " AND product_name LIKE %s OR brand_name LIKE %s"
-            count_query += " AND product_name LIKE %s OR brand_name LIKE %s"
+            base_query += " AND (product_name LIKE %s OR brand_name LIKE %s)"
+            count_query += " AND (product_name LIKE %s OR brand_name LIKE %s)"
             params.extend([f"%{name}%", f"%{name}%"])
         
         if merchant_id:
@@ -274,8 +286,9 @@ def get_products(
         pagination_params.extend([page_size, offset])
         
         # 执行查询
-        products = execute_query(base_query, pagination_params, fetch_all=True)
-        total_count = execute_query(count_query, params, fetch_one=True)[0]
+        products = execute_query(base_query, pagination_params, fetch_all=True) or []
+        count_result = execute_query(count_query, params, fetch_one=True)
+        total_count = list(count_result.values())[0] if count_result else 0
         
         return {
             "data": products,

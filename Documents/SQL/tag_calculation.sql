@@ -2,8 +2,8 @@
 -- 用于将原始数据转换为标签值
 USE tagfactory;
 
--- 1. 用户标签计算
--- 1.1 用户基础标签计算
+-- 1. 客户标签计算
+-- 1.1 客户基础标签计算
 -- 性别识别
 INSERT INTO tag_relation_customer (customer_id, tag_code, tag_value) 
 SELECT 
@@ -61,12 +61,12 @@ SELECT
     CASE 
         WHEN DATEDIFF(NOW(), register_time) < 7 THEN '新注册' 
         WHEN DATEDIFF(NOW(), register_time) < 30 THEN '月度新人' 
-        ELSE '老用户' 
+        ELSE '老客户' 
     END 
 FROM customer_info 
 ON DUPLICATE KEY UPDATE tag_value = VALUES(tag_value);
 
--- 1.2 用户统计标签计算
+-- 1.2 客户统计标签计算
 -- 消费能力
 INSERT INTO tag_relation_customer (customer_id, tag_code, tag_value) 
 SELECT 
@@ -105,8 +105,8 @@ SELECT
 FROM customer_info 
 ON DUPLICATE KEY UPDATE tag_value = VALUES(tag_value);
 
--- 1.3 用户衍生标签计算
--- 用户价值(RFM)
+-- 1.3 客户衍生标签计算
+-- 客户价值(RFM)
 INSERT INTO tag_relation_customer (customer_id, tag_code, tag_value) 
 SELECT 
     customer_id, 
